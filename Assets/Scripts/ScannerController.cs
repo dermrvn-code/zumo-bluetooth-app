@@ -11,10 +11,10 @@ public class ScannerController : MonoBehaviour
     public Image sideLeft;
     public Image sideRight;
 
-    private int frontLeftValue = 0;
-    private int frontRightValue = 0;
-    private int sideLeftValue = 0;
-    private int sideRightValue = 0;
+    public int frontLeftValue = 0;
+    public int frontRightValue = 0;
+    public int sideLeftValue = 0;
+    public int sideRightValue = 0;
 
     private RadarSpriteManager frontLeftScript;
     private RadarSpriteManager frontRightScript;

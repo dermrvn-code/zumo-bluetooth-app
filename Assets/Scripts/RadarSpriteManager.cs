@@ -19,7 +19,6 @@ public class RadarSpriteManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(state);
         if (state == 0)
         {
             image.enabled = false;
