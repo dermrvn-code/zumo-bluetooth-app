@@ -1,1 +1,1 @@
-# Bobo Bluetoothe App
+# Bobo Bluetooth App
