@@ -9,83 +9,111 @@ using System.Text;
 
 public class BluetoothController : MonoBehaviour
 {
+    // DEBUG MODE
+    public bool debugMode;
+
+    // GET JOYSTICKS
     public FixedJoystick leftStick;
     public FixedJoystick rightStick;
-    public GameObject ScannerControllerObject;
 
-    public Text text;
+    // GET RADAR CONTROLLER OBJECT
+    public GameObject RadarControllerObject;
 
-    private ScannerController scannerController;
+    // GET DISPLAY TEXT
+    public Text displayText;
+    public Text debugLogText;
 
-    private int leftSpeed;
-    private int rightSpeed;
-
+    // BLUETOOTH VARIABLES
     public String deviceName;
-    private bool IsConnected;
-    public static string dataRecived = "";
+    private bool isConnected;
 
+
+    // RADAR CONTROLLER SCRIPT
+    private RadarController radarController;
 
 
     void Start()
     {
-        scannerController = ScannerControllerObject.GetComponent<ScannerController>();
+        // GET RADARCONTROLLER SCRIPT
+        radarController = RadarControllerObject.GetComponent<RadarController>();
 
+        // GENERATE BLUETOOTH OBJECT
         BluetoothService.CreateBluetoothObject();
 
-        IsConnected =  BluetoothService.StartBluetoothConnection(deviceName);
-
-        if(IsConnected){
-            text.text = "Connected";
-        }else{
-            text.text = "Not Connected";
-
-        }
-
+        // CHECK IF IS CONNECTED AND DISPLAY STATUS
+        isConnected = BluetoothService.StartBluetoothConnection(deviceName);
+        displayText.text = (isConnected) ? "Connected to " + deviceName : "Not Connected";
     }
 
+    // JOYSTICK SPEED
+    private int leftSpeed;
+    private int rightSpeed;
 
-    private int oldLeft = 0;
-    private int oldRight = 0;
+    // OLD JOYSTICK SPEED FOR CHANGE COMPARISON
+    private int oldLeftSpeed = 0;
+    private int oldRightSpeed = 0;
     // Update is called once per frame
     void Update()
     {
-        leftSpeed = (int) Math.Round(leftStick.Vertical*3)*100;
-        rightSpeed = (int) Math.Round(rightStick.Vertical*3)*100;
+        debugLogText.enabled = debugMode;
 
-        if (IsConnected) {
+        if (isConnected)
+        {
+            // CONVERT JOYSTICK DATA TO SPEED VALUES (0-300, 100 Steps)
+            leftSpeed = (int)Math.Round(leftStick.Vertical * 3) * 100;
+            rightSpeed = (int)Math.Round(rightStick.Vertical * 3) * 100;
 
-           
-           
-            if(leftSpeed != oldLeft || rightSpeed != oldRight){
+
+            // WHEN SPEED CHANGES SEND NEW DATA
+            if (leftSpeed != oldLeftSpeed || rightSpeed != oldRightSpeed)
+            {
                 String cmd = "m " + leftSpeed + " " + rightSpeed + ";";
-                text.text = cmd;
-                BluetoothService.WritetoBluetooth(cmd);
+                try
+                {
+                    BluetoothService.WritetoBluetooth(cmd);
+                }
+                catch (Exception e)
+                {
+                    DebugLog("Error while sending bluetooth data");
+                }
 
-                oldLeft = leftSpeed;
-                oldRight = rightSpeed;
+                // UPDATE THE OLD SPEED
+                oldLeftSpeed = leftSpeed;
+                oldRightSpeed = rightSpeed;
             }
 
 
             try
-            {
-                string datain =  BluetoothService.ReadFromBluetooth();
-                if (datain.Length > 1)
-                {   
-                    if(datain.Contains("sd")){
-                        string[] sd = datain.Split(' ');
-                        scannerController.SetScanner(Int32.Parse(sd[1]),Int32.Parse(sd[2]),Int32.Parse(sd[3]),Int32.Parse(sd[4]));
+            {   
+                String bluetoothData = BluetoothService.ReadFromBluetooth();
+                if (bluetoothData.Length > 0)
+                {
+                    if (bluetoothData.StartsWith("sd"))
+                    {
+                        string[] sd = bluetoothData.Split(' ');
+                        if(sd.Length >= 5){
+                            radarController.SetScanner(Int32.Parse(sd[1]), Int32.Parse(sd[2]), Int32.Parse(sd[3]), Int32.Parse(sd[4]));
+                        }
                     }
                 }
-        
+
             }
             catch (Exception e)
             {
+                DebugLog("Error while reading bluetooth data");
             }
+        }
+    }
+
+    void DebugLog(String log)
+    {
+        if(debugMode){
+            debugLogText.text += "\n" + log;
         }
     }
 
 
 
-    
+
 }
 

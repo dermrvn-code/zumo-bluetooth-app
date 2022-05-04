@@ -5,40 +5,29 @@ using UnityEngine.UI;
 
 public class RadarSpriteManager : MonoBehaviour
 {
+    // ARRAY OF DIFFERENT STATE SPRITES
     public Sprite[] sprites = new Sprite[6];
-    private int state = 0;
-
     private Image image;
 
-    // Start is called before the first frame update
     void Start()
     {
+        // GET THE IMAGE OBJECT THE SCRIPT IS PLACED ON
         image = GetComponent<Image>();
     }
 
-    // Update is called once per frame
-    void Update()
+    // SET STATE AS A PUBLIC FUNCTION
+    public void SetState(int state)
     {
-        if (state == 0)
-        {
-            image.enabled = false;
-        }
-        else
+        // ENABLE IMAGE AND CHANGE SPRITE TO STATE SPRITE
+        if (state > 1 && state <= 6)
         {
             image.enabled = true;
             image.sprite = sprites[state - 1];
         }
-    }
-
-    public void SetState(int state)
-    {
-        if (state > 0 && state <= 6)
-        {
-            this.state = state;
-        }
         else
         {
-            this.state = 0;
+            // DISBLE IMAGE IF STATE IS 0 OR UNVALID
+            image.enabled = false;
         }
     }
 }
