@@ -12,9 +12,10 @@ public class BluetoothController : MonoBehaviour
     // DEBUG MODE
     public bool debugMode;
 
-    // GET JOYSTICKS
-    public FixedJoystick leftStick;
-    public FixedJoystick rightStick;
+    // CONTROLLER
+    public FixedJoystick joystick;
+    public Button speedBtn;
+    public Button horn;
 
     // GET RADAR CONTROLLER OBJECT
     public GameObject RadarControllerObject;
@@ -43,10 +44,36 @@ public class BluetoothController : MonoBehaviour
         DebugLog("Try reconnect: " + ((isConnected) ? "success" : "failed"));
     }
 
-    void UpdateConnection(){
+    void UpdateConnection()
+    {
         connectionText.text = (isConnected) ? "Connected" : "Click to connect";
         connectionText.color = (isConnected) ? Color.green : Color.red;
     }
+
+    public void ChangeSpeed()
+    {
+        speedMultiplier = (speedMultiplier == 1) ? 2 : 1;
+        speedBtn.GetComponent<Image>().color = (speedMultiplier == 1) ? Color.white : Color.red;
+        DebugLog(speedMultiplier.ToString());
+    }
+
+    public void Honk()
+    {
+        String cmd = "h;";
+        DebugLog(cmd);
+        try
+        {
+            BluetoothService.WritetoBluetooth(cmd);
+        }
+        catch (Exception e)
+        {
+            DebugLog(e.Message);
+            isConnected = false;
+        }
+    }
+
+
+    private int speedMultiplier = 1;
 
     void Start()
     {
@@ -56,8 +83,10 @@ public class BluetoothController : MonoBehaviour
         // GET RADARCONTROLLER SCRIPT
         radarController = RadarControllerObject.GetComponent<RadarController>();
 
-        // GET BUTTON OBJECT
+        // BUTTON LISTENER
         reconnectBtn.onClick.AddListener(Connect);
+        speedBtn.onClick.AddListener(ChangeSpeed);
+        horn.onClick.AddListener(Honk);
 
         // CHECK IF IS CONNECTED AND DISPLAY STATUS
         Connect();
@@ -65,6 +94,7 @@ public class BluetoothController : MonoBehaviour
     }
 
     // JOYSTICK SPEED
+
     private int leftSpeed;
     private int rightSpeed;
 
@@ -82,10 +112,16 @@ public class BluetoothController : MonoBehaviour
             if (time >= 0.3f)
             {
 
+                //joystick.Horizontal; 0
+                //joystick.Vertical; 1 ==> 300
+                int max = 250;
+                int steps = 50;
+                leftSpeed = (speedMultiplier * (int)Math.Round(joystick.Vertical * (max / steps)) * steps) + ((int)Math.Round(joystick.Horizontal * (max / steps)) * steps) + 300;
+                rightSpeed = (speedMultiplier * (int)Math.Round(joystick.Vertical * (max / steps)) * steps) + ((int)Math.Round(-joystick.Horizontal * (max / steps)) * steps) + 300;
 
                 // CONVERT JOYSTICK DATA TO SPEED VALUES (0-300, 100 Steps)
-                leftSpeed = ((int)Math.Round(leftStick.Vertical * 3) * 100) + 300;
-                rightSpeed = ((int)Math.Round(rightStick.Vertical * 3) * 100) + 300;
+                //leftSpeed = ((int)Math.Round(leftStick.Vertical * 3) * 100) + 300;
+                //rightSpeed = ((int)Math.Round(rightStick.Vertical * 3) * 100) + 300;
 
 
                 // WHEN SPEED CHANGES SEND NEW DATA
@@ -104,7 +140,7 @@ public class BluetoothController : MonoBehaviour
                 {
                     String bluetoothData = BluetoothService.ReadFromBluetooth();
                     if (bluetoothData.Length > 0)
-                    {   
+                    {
                         noData = 0;
                         if (bluetoothData.StartsWith("sd"))
                         {
@@ -114,7 +150,8 @@ public class BluetoothController : MonoBehaviour
                                 radarController.SetScanner(Int32.Parse(sd[1]), Int32.Parse(sd[2]), Int32.Parse(sd[3]), Int32.Parse(sd[4]));
                             }
                         }
-                    }else
+                    }
+                    else
                     {
                         noData++;
 
@@ -128,7 +165,8 @@ public class BluetoothController : MonoBehaviour
                 time = 0;
             }
         }
-        if(noData > 10){
+        if (noData > 10)
+        {
             isConnected = false;
             noData = 0;
             UpdateConnection();
