@@ -27,10 +27,26 @@ public class BluetoothController : MonoBehaviour
     public String deviceName;
     private bool isConnected;
 
+    // BUTTONS
+    public Button reconnectBtn;
+
 
     // RADAR CONTROLLER SCRIPT
     private RadarController radarController;
 
+    void Connect()
+    {
+        // GENERATE BLUETOOTH OBJECT
+        BluetoothService.CreateBluetoothObject();
+        isConnected = BluetoothService.StartBluetoothConnection(deviceName);
+        UpdateConnection();
+        DebugLog("Try reconnect: " + ((isConnected) ? "success" : "failed"));
+    }
+
+    void UpdateConnection(){
+        connectionText.text = (isConnected) ? "Connected" : "Click to connect";
+        connectionText.color = (isConnected) ? Color.green : Color.red;
+    }
 
     void Start()
     {
@@ -40,87 +56,89 @@ public class BluetoothController : MonoBehaviour
         // GET RADARCONTROLLER SCRIPT
         radarController = RadarControllerObject.GetComponent<RadarController>();
 
-        // GENERATE BLUETOOTH OBJECT
-        BluetoothService.CreateBluetoothObject();
+        // GET BUTTON OBJECT
+        reconnectBtn.onClick.AddListener(Connect);
 
         // CHECK IF IS CONNECTED AND DISPLAY STATUS
-        isConnected = BluetoothService.StartBluetoothConnection(deviceName);
-        connectionText.text = (isConnected) ? "Connected to " + deviceName : "Not Connected";
-        connectionText.color = (isConnected) ? Color.green : Color.red;
+        Connect();
+        debugLogText.enabled = debugMode;
     }
 
     // JOYSTICK SPEED
     private int leftSpeed;
     private int rightSpeed;
 
-    // OLD JOYSTICK SPEED FOR CHANGE COMPARISON
-    private int oldLeftSpeed = 0;
-    private int oldRightSpeed = 0;
+    private int noData;
+
 
     float time;
     // Update is called once per frame
     void Update()
     {
-        time = time + 1f * Time.deltaTime;
+        if (isConnected)
+        {
 
-        if (time >= 0.2f) {
-
-            debugLogText.enabled = debugMode;
-
-            if (isConnected)
+            time = time + 1f * Time.deltaTime;
+            if (time >= 0.3f)
             {
+
+
                 // CONVERT JOYSTICK DATA TO SPEED VALUES (0-300, 100 Steps)
                 leftSpeed = ((int)Math.Round(leftStick.Vertical * 3) * 100) + 300;
                 rightSpeed = ((int)Math.Round(rightStick.Vertical * 3) * 100) + 300;
 
 
                 // WHEN SPEED CHANGES SEND NEW DATA
-                /*if (leftSpeed != oldLeftSpeed || rightSpeed != oldRightSpeed)
-                {*/
-                    String cmd = "m " + leftSpeed + " " + rightSpeed + ";";
-                    try
-                    {
-                        BluetoothService.WritetoBluetooth(cmd);
-                    }
-                    catch (Exception e)
-                    {
-                        DebugLog(e.Message);
-                    }
-
-                    // UPDATE THE OLD SPEED
-                    oldLeftSpeed = leftSpeed;
-                    oldRightSpeed = rightSpeed;
-                //}
-
-
+                String cmd = "m " + leftSpeed.ToString("000") + " " + rightSpeed.ToString("000") + ";";
                 try
-                {   
-                    String bluetoothData = BluetoothService.ReadFromBluetooth();
-                    if (bluetoothData.Length > 0)
-                    {
-                        if (bluetoothData.StartsWith("sd"))
-                        {
-                            string[] sd = bluetoothData.Split(' ');
-                            if(sd.Length >= 5){
-                                radarController.SetScanner(Int32.Parse(sd[1]), Int32.Parse(sd[2]), Int32.Parse(sd[3]), Int32.Parse(sd[4]));
-                            }
-                        }
-                    }
-
+                {
+                    BluetoothService.WritetoBluetooth(cmd);
                 }
                 catch (Exception e)
                 {
                     DebugLog(e.Message);
+                    isConnected = false;
                 }
-            }
-            time = 0;
 
+                try
+                {
+                    String bluetoothData = BluetoothService.ReadFromBluetooth();
+                    if (bluetoothData.Length > 0)
+                    {   
+                        noData = 0;
+                        if (bluetoothData.StartsWith("sd"))
+                        {
+                            string[] sd = bluetoothData.Split(' ');
+                            if (sd.Length >= 5)
+                            {
+                                radarController.SetScanner(Int32.Parse(sd[1]), Int32.Parse(sd[2]), Int32.Parse(sd[3]), Int32.Parse(sd[4]));
+                            }
+                        }
+                    }else
+                    {
+                        noData++;
+
+                    }
+                }
+                catch (Exception e)
+                {
+                    DebugLog(e.Message);
+                    isConnected = false;
+                }
+                time = 0;
+            }
+        }
+        if(noData > 10){
+            isConnected = false;
+            noData = 0;
+            UpdateConnection();
         }
     }
 
     void DebugLog(String log)
     {
-        if(debugMode){
+        if (debugMode)
+        {
             debugLogText.text += "\n" + log;
         }
     }

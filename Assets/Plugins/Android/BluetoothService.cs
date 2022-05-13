@@ -50,6 +50,7 @@ public class BluetoothService
         else return false;
     }
 
+
     // should be called inside OnApplicationQuit
     // stop connection with the bluetooth device
     public static void StopBluetoothConnection()
