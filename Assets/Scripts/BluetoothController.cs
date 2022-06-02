@@ -16,6 +16,7 @@ public class BluetoothController : MonoBehaviour
     public FixedJoystick joystick;
     public Button speedBtn;
     public Button horn;
+    public Button reconnectBtn;
 
     // GET RADAR CONTROLLER OBJECT
     public GameObject RadarControllerObject;
@@ -27,9 +28,6 @@ public class BluetoothController : MonoBehaviour
     // BLUETOOTH VARIABLES
     public String deviceName;
     private bool isConnected;
-
-    // BUTTONS
-    public Button reconnectBtn;
 
 
     // RADAR CONTROLLER SCRIPT
