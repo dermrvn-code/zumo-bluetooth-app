@@ -41,60 +41,90 @@ Im Folgenden gebe ich eine grobe Übersicht über den Code und seine allgemeine 
 
 Für die Kommunikation über Bluetooth habe ich folgendes Package benutzt: [Blue Unity by bentalebahmed](https://github.com/bentalebahmed/BlueUnity)
 
-Auf den Code des Packages werde ich nicht eingehen. Ich werde mich auf die Klasse des [BluetoothControllers]() fokussieren, da diese die meiste Arbeit übernimmt. Zur Vollständigkeit gehe ich zu Beginn über die restlichen beiden Klassen, welche das Radar steuern.
+Auf den Code des Packages werde ich nicht eingehen. Ich werde mich auf die Klasse des BluetoothControllers fokussieren, da diese die meiste Arbeit übernimmt. Zur Vollständigkeit gehe ich zu Beginn über die restlichen beiden Klassen, welche das Radar steuern.
 
 ### RadarSpriteManager.cs [[zur Datei]](/Assets/Scripts/RadarSpriteManager.cs)
 
+Der Sprite Manager ist eine Klasse, welches auf den vier Bildern des Radars liegt, welche die vier verschiedenen Sensordaten anzeigen.
+
+Die Klasse hält die 6 verschiedenen Sprites, welcher die Richtung an Daten empfangen kann.
+
+Die einzige Methode der Klasse ist die `SetState(int state)` Methode. Sie nimmt als Parameter einen int bzw. im Kontext den empfangenen Sensorwert.
+Wenn dieser Wert zwischen 1 und 6 liegt, wird das Bild auf das für den Sensorwert richtigen Sprite gesetzt. Falls der Wert 0 oder ungültig ist, wird der Punkt dieses Bildes komplett ausgeblendet.
+
+### RadarController.cs [[zur Datei]](/Assets/Scripts/RadarController.cs)
+
+Der Radar Controller ist ein Platzhalter Objekt innerhalb des Radars. Die BluetoothController Klasse greift darauf zu und updated über diese Klasse das Radar anhand der empfangenen Sensordaten.
+ 
+Die Klasse speichert zunächst alle vier Bilder des Radars und holt sich in der `void Start()` die SpriteManager Skripte, welche auf diesen Bildern liegen. Das Skript speichert diese dann für jeden Sensor.
+ 
+Die für alle sichtbare Methode `SetScanner(int fl, int fr, int sl, int sr)` nimmt die vier Sensordaten als Paramter und ruft auf dem entsprechendem Bild die `SetState(int state)` Methode auf, welche dann das Radar an die Sensordaten anpasst.
+
+### BluetoothController.cs [[zur Datei]](/Assets/Scripts/BluetoothController.cs)
+
 #### Kopf des Codes
 
-Auf die dann definierten Funktionen gehe ich zum Schluss ein. Zunächst beschäftigen wir uns mit der [`void setup()`](#setup) und der [`void loop()`](#loop).
+Im Kopf der Klasse werden zunächst einige Variablen definiert. Alle als `public` gekennzeichneten Variablen sind im Unity Editor editierbar. Dies ist für die Konfiguration des Bluetooth Adapter Namens oder das Aktivieren des Debug Modes interessant, da man so die App anpassen kann, ohne den Code zu ändern.
+  
+Wir speichern uns zunächst das Joysrick Objekt, den Speed Knopf, die Hupe bzw. den Star Wars Knopf und den Reconnect Knopf als Objekte, um sie später nutzen zu können.
 
-#### start()
+Ebenso speichern wir uns den RadarController, den Connection Text innerhalb des Reconnect Knopfes und den Debug Log Text.
+
+Wir erstellen ebenfalls die Variablen für den Debug Modus, für den Connection Status und die Variable worauf wir das RadarController Skript speichern.
+  
+Ich starte zunächst mit der [`Start()`](#start) Methode, danach mache ich weiter mit der [`Connect()`](#connect) Methode und im Anschluss erkläre ich alle weiteren Methoden:
+
+- [`Update()`](#update)
+- [`UpdateConnection()`](#updateconnection)
+- [`ChangeSpeed()`](#changespeed)
+- [`Honk()`](#honk)
+- [`DebugLog()`](#debuglog)
 
 
+#### Start()
 
-#### update()
+Zur Beginn der Start Methode deaktivieren wir das automatische Timeout des Handys.
+
+Danach speichern wir das radarController Skript, welches auf dem dafür vorgesehenem Objekt liegt.
+
+Dann werden dem Reconnect, dem Speed und dem Hupen bzw. Star War Knop die jeweiligen Listener angehängt. Die Methoden dieser Listener werden später erläutert.
+
+Zu guter Letzt wird die [`Connect()`](#connect) Methode aufgerufen und der DebugText wird je nach Debug Mode aktiviert oder deaktiviert.
 
 
+#### Connect()
 
-#### splitCommands()
+Diese Methode wird sowohl beim Start der App, als auch beim drücken des Reconnect Knopfes aufgerufen.
 
-`void splitCommands(String command, String *cmd, String *arg0, String *arg1, String *arg2)`
+Sie erstellt zunächst ein Bluetooth Objekt, über welches im weiteren per Bluetooth kommuniziert wird.
 
-Diese Funktion macht nichts anderes, als einen `String command` zu nehmen und diesen in vier Strings zu teilen.
+Danach wird eine Bluetooth Verbindung über den Namen des Gerätes gestartet. Diese Funktion liefert einen Boolean je nach Erfolg der Verbindung zurück. Diesen Wert speichern wir in unserer `isConnected` Variablen.
 
-Dies macht diese Funktion, indem sie den Hauptstring an den Leerzeichen teilt. Der erste Teil wird dann über einen Pointer dem `String *cmd` übergeben. Der zweite, dritte und vierte Teil wird, ebenfalls über Pointer, den Strings der Argumente `arg0, arg1, arg2` übergeben.
+Danach rufen wir die [`UpdateConnection()`](#updateconnection) Methode auf, welche den Text im Reconnect Button je nach Status der Verbindung updated.
 
-Da C++ bzw. Arduino keine einfache split Methode zur Verfügung stellt, habe ich mich für diese Methode des Teilens entschieden.
+Zum Schluss loggen wir nun den Erfolg bzw. Misserfolg des Verbindungsaufbaus.
 
-<sub>*Verbesserungsvorschläge sind gerne gesehen*</sub>
+#### UpdateConnection()
 
-#### commands()
+Diese Methode updated lediglich den Text innerhalb des Reconnect Buttons je nachdem ob eine Verbindung besteht oder nicht. Die Methode ändert ebenfalls die Textfarbe dementsprechend.
 
-`void commands(String command)`
+#### Update()
+#### ChangeSpeed()
 
-Diese Funktion bearbeitet die Befehle, welche per Bluetooth hineinkommen und führt je nach Befehl die Aktion durch.
+Diese Methode wird beim Drücken des Speed Knopfes aufgerufen.
+Sie wechselt je nach aktuellem Status der `speedMultiplier` Variable den Wert (2 <--> 1). Sie ändert dementsprechend auch die Farbe des Speed Knopfes und loggt den neuen Werte der `speedMultiplier` Variable.
 
-Dafür werden zunächst die vier Strings angelegt, die in die [`splitCommands()`](#splitcommands) Funktion gefüttert werden.
+#### Honk()
 
-Einer dieser Strings (`cmd`) enhält den Befehl, welcher auszuführen ist. Dieser String wird dann in einer if-Abfrage überprüft. Da der Zumo bisher nur den *move* und den *honk* Befehl annimmt (Keyword *m* und Keyword *h*), wird nur nach diesem gesucht. Dabei wird zur Aussortierung von fehlerhaften Befehlen überprüft, ob der ursprüngliche Befehlsstring die richtige Länge hat und nicht zu wenig oder zu viele Zeichen gesendet hat.
+Diese Methode wird aufgerufen, sobald die Hupe bzw. der Star Wars Knopf gedrückt wird.
 
-Wenn dies erfüllt ist, werden in dem mover-Block Argumente in Zahlen umgewandelt und die Werte werden zurück ins Negative umgewandelt.
-Bei dem honk-Block wird dann die vorher definierte StarWars Melodie gespielt.
+Sie erstellt zuerst den Befehl `"h;"`, welcher per Bluetooth gesendet wird. Diesen Befehl loggt die Methode und versucht dann den Befehl per Bluetooth zu senden.
 
-Zur Vereinfachung schickt die App keine negativen Werte im move-Block. Der Wert 300 entspricht einer 0. Dementsprechend ist die 0 = -300 und die 600 = 300. Diese Umwandelung wird gemeinsam mit der Konvertierung zur Zahl durchgeführt.
+Falls das Senden nicht gelingt, wird die Fehlernachricht geloggt und der Verbindungsstatus auf nicht verbunden gesetzt.
 
-Diese Integer werden nun einfach an den Motor des Zumos gesendet.
+#### DebugLog()
 
-#### sendSensorData()
-
-`void sendSensorData(int frontLeft, int frontRight, int sideLeft, int sideRight)`
-
-Diese Funktion sendet die als Parameter angegebenen SensorDaten über Bluetooth an die App.
-
-Da die App die Sensordaten über das Keyword *sd*(sendData) empfängt, wird dieses an den Anfang gesetzt. Danach werden die Sensordaten angehängt, sodass der Befehl nach dem Schema `sd <frontLeft> <frontRight <sideLeft> <sideRight>` aufgebaut ist.
-
-Dieser String wird nun einfach über den Bluetooth Serial gesendet.
+Diese Methode updated, wenn der `debugMode` aktiv ist, den Text innerhalb des DebugLogTextes, indem er den über den Paramter erhaltenen String anhängt.
 
 ## Code erweitern
 
@@ -129,8 +159,6 @@ Nehmen wir nun einfach mal folgenden Aufbau:
 `b <note> <duration> <volume>`
 
 Diese Syntax orientiert sich an den drei Parametern, die die [`playNote()`](https://pololu.github.io/pololu-buzzer-arduino/class_pololu_buzzer.html#a989d410dd6cdb7abfa136c3734040fb5) Funktion des Buzzers nimmt.
-
-  
 
 Dieser Befehl muss nun natürlich auch in der App integriert werden. Darauf gehe ich jedoch in der Dokumentation der [**Zumo-Bluetooth-App**](https://github.com/dermrvn-code/zumo-bluetooth-app) ein. Hier beschränken wir uns nun erstmal nur auf den Zumo Code.
 
