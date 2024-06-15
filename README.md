@@ -15,9 +15,7 @@ Natürlich kann dieser Code beliebig um weitere Funktionen erweitert werden.
 
 3. [Codeübersicht](#codeübersicht)
 
-4. [Code erweitern](#code-erweitern)
-
-5. [Schlusswort](#schlusswort)
+4. [Schlusswort](#schlusswort)
 
 ## Aufbau der App
 ![App UI](https://raw.githubusercontent.com/dermrvn-code/zumo-bluetooth-app/main/UI.png)
